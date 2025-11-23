@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Princess Flappy Bird Challenge</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Playfair Display', 'Times New Roman', serif;
+        }
+
+        :root {
+            --gold: #D4AF37;
+            --light-gold: #F5E8B5;
+            --silver: #C0C0C0;
+            --dark-silver: #A0A0A0;
+            --light-silver: #E8E8E8;
+            --dark: #333333;
+            --white: #FFFFFF;
+            --pink: #FFB6C1;
+            --light-pink: #FFE4E9;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--light-pink), var(--light-silver));
+            color: var(--dark);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 360px;
+            height: 600px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 8px solid var(--gold);
+        }
+
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #start-screen, #game-over-screen, #victory-screen, #pause-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--dark);
+            text-align: center;
+            z-index: 10;
+            padding: 30px;
+            border-radius: 12px;
+        }
+
+        #game-over-screen, #victory-screen, #pause-screen {
+            display: none;
+            background: rgba(255, 255, 255, 0.98);
+        }
+
+        .crown-icon {
+            font-size: 3rem;
+            color: var(--gold);
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, var(--silver), var(--gold));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: var(--dark);
+        }
+
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            line-height: 1.6;
+            max-width: 90%;
+        }
+
+        button {
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            background: linear-gradient(to right, var(--silver), var(--gold));
+            border: none;
+            border-radius: 30px;
+            color: var(--dark);
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        #score-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--dark);
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            z-index: 5;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--gold);
+        }
+
+        #high-score-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--dark);
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            z-index: 5;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--silver);
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: var(--dark);
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            z-index: 5;
+            border-top: 2px solid var(--silver);
+        }
+
+        .sparkle {
+            position: absolute;
+            font-size: 20px;
+            color: var(--gold);
+            opacity: 0;
+            animation: fall 10s linear infinite;
+            z-index: 1;
+        }
+
+        .silver-sparkle {
+            color: var(--silver);
+        }
+
+        .music-player {
+            position: absolute;
+            bottom: 70px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 2px solid var(--gold);
+        }
+
+        .music-player button {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            color: var(--gold);
+            padding: 0;
+            box-shadow: none;
+        }
+
+        .music-player button:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            z-index: 5;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, var(--silver), var(--gold));
+            transition: width 0.3s;
+        }
+
+        .difficulty-selector {
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .difficulty-btn {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        .difficulty-btn.active {
+            background: linear-gradient(to right, var(--gold), var(--silver));
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        .pause-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 5;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--gold);
+        }
+
+        .game-link {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 2px solid var(--gold);
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: bold;
+            transition: transform 0.3s;
+        }
+
+        .game-link:hover {
+            transform: translateY(-3px);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-10vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 10px rgba(212, 175, 55, 0.5), 0 0 20px rgba(212, 175, 55, 0.3);
+            }
+            to {
+                text-shadow: 0 0 15px rgba(212, 175, 55, 0.7), 0 0 25px rgba(212, 175, 55, 0.5), 0 0 35px rgba(212, 175, 55, 0.3);
+            }
+        }
+
+        .goal-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 10px;
+            color: var(--gold);
+        }
+
+        .flap-animation {
+            animation: flap 0.3s ease;
+        }
+
+        @keyframes flap {
+            0% { transform: rotate(-10deg); }
+            50% { transform: rotate(10deg); }
+            100% { transform: rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="sparkles-container" id="sparklesContainer"></div>
+    
+    <div id="game-container">
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <canvas id="game-canvas" width="360" height="600"></canvas>
+        <div id="score-display">Gaps: 0/20</div>
+        <div id="high-score-display">Best: 0</div>
+        <div id="instructions">Press SPACE, CLICK, or TAP to fly</div>
+        
+        <button class="pause-btn" id="pauseButton">
+            <i class="fas fa-pause"></i>
+        </button>
+        
+        <div class="music-player">
+            <button id="playPauseBtn"><i class="fas fa-play"></i></button>
+            <span>Princess Theme</span>
+            <audio id="backgroundMusic" loop>
+                <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+            </audio>
+        </div>
+        
+        <div id="start-screen">
+            <div class="crown-icon">
+                <i class="fas fa-crown"></i>
+            </div>
+            <h1>Princess Flappy Bird</h1>
+            <p>Help the royal bird fly through 20 magical gates to unlock the Princess Day celebration!</p>
+            
+            <div class="difficulty-selector">
+                <button class="difficulty-btn active" data-difficulty="easy">Easy</button>
+                <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+                <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+            </div>
+            
+            <button id="start-button">
+                <i class="fas fa-play"></i> Start Challenge
+            </button>
+            <p class="goal-text">Goal: 20 Gates</p>
+        </div>
+        
+        <div id="game-over-screen">
+            <div class="crown-icon">
+                <i class="fas fa-crown"></i>
+            </div>
+            <h2>Royal Mishap!</h2>
+            <p>The royal bird needs your help to reach the Princess Day celebration!</p>
+            <button id="restart-button">
+                <i class="fas fa-redo"></i> Try Again
+            </button>
+        </div>
+        
+        <div id="victory-screen">
+            <div class="crown-icon">
+                <i class="fas fa-crown"></i>
+            </div>
+            <h1>Victory!</h1>
+            <p>You've successfully guided the royal bird through 20 magical gates!</p>
+            <p>The Princess Day celebration is now unlocked!</p>
+            <button id="continue-button">
+                <i class="fas fa-gem"></i> Enter Princess Page
+            </button>
+        </div>
+        
+        <div id="pause-screen">
+            <div class="crown-icon">
+                <i class="fas fa-crown"></i>
+            </div>
+            <h2>Game Paused</h2>
+            <p>The royal bird is taking a break!</p>
+            <button id="resume-button">
+                <i class="fas fa-play"></i> Resume Game
+            </button>
+            <button id="restart-from-pause-button">
+                <i class="fas fa-redo"></i> Restart Game
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const victoryScreen = document.getElementById('victory-screen');
+        const pauseScreen = document.getElementById('pause-screen');
+        const startButton = document.getElementById('start-button');
+        const restartButton = document.getElementById('restart-button');
+        const continueButton = document.getElementById('continue-button');
+        const resumeButton = document.getElementById('resume-button');
+        const restartFromPauseButton = document.getElementById('restart-from-pause-button');
+        const pauseButton = document.getElementById('pauseButton');
+        const scoreDisplay = document.getElementById('score-display');
+        const highScoreDisplay = document.getElementById('high-score-display');
+        const progressBar = document.getElementById('progressBar');
+        const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+        
+        // Music player
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        let isPlaying = false;
+        
+        // Sound effects
+        const flapSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-bird-whistling-1455.mp3');
+        const scoreSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-magic-sparkle-sound-3091.mp3');
+        const collisionSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3');
+        const victorySound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3');
+        
+        // Game state
+        let gameRunning = false;
+        let gamePaused = false;
+        let score = 0;
+        let highScore = localStorage.getItem('princessFlappyHighScore') || 0;
+        let frames = 0;
+        let gameSpeed = 2;
+        let difficulty = 'easy';
+        let particles = [];
+        
+        // Initialize high score display
+        highScoreDisplay.textContent = `Best: ${highScore}`;
+        
+        // Create sparkles for background
+        function createSparkles() {
+            const sparklesContainer = document.getElementById('sparklesContainer');
+            const sparkleCount = 20;
+            
+            for (let i = 0; i < sparkleCount; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.classList.add('sparkle');
+                
+                // Alternate between gold and silver sparkles
+                if (i % 2 === 0) {
+                    sparkle.classList.add('silver-sparkle');
+                    sparkle.innerHTML = '✦';
+                } else {
+                    sparkle.innerHTML = '★';
+                }
+                
+                sparkle.style.left = Math.random() * 100 + 'vw';
+                sparkle.style.animationDelay = Math.random() * 10 + 's';
+                sparkle.style.fontSize = (Math.random() * 15 + 10) + 'px';
+                sparklesContainer.appendChild(sparkle);
+            }
+        }
+        
+        // Background elements
+        const background = {
+            draw: function() {
+                // Sky gradient
+                const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                gradient.addColorStop(0, '#FFE4E9'); // Light pink
+                gradient.addColorStop(1, '#E8E8E8'); // Light silver
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Clouds
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                this.drawCloud(100, 80, 25);
+                this.drawCloud(250, 120, 30);
+                this.drawCloud(50, 180, 20);
+                
+                // Ground
+                ctx.fillStyle = '#D4AF37'; // Gold
+                ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
+                
+                // Grass
+                ctx.fillStyle = '#7CFC00';
+                ctx.fillRect(0, canvas.height - 60, canvas.width, 10);
+                
+                // Decorative flowers
+                this.drawFlower(30, canvas.height - 50);
+                this.drawFlower(120, canvas.height - 45);
+                this.drawFlower(200, canvas.height - 55);
+                this.drawFlower(280, canvas.height - 48);
+                this.drawFlower(330, canvas.height - 52);
+            },
+            
+            drawCloud: function(x, y, size) {
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.arc(x + size * 0.8, y - size * 0.2, size * 0.8, 0, Math.PI * 2);
+                ctx.arc(x + size * 1.5, y, size, 0, Math.PI * 2);
+                ctx.arc(x + size * 0.8, y + size * 0.2, size * 0.8, 0, Math.PI * 2);
+                ctx.fill();
+            },
+            
+            drawFlower: function(x, y) {
+                // Stem
+                ctx.fillStyle = '#7CFC00';
+                ctx.fillRect(x, y, 3, 15);
+                
+                // Flower
+                ctx.fillStyle = '#FF69B4';
+                ctx.beginPath();
+                ctx.arc(x, y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Center
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        };
+        
+        // Bird properties (royal bird)
+        const bird = {
+            x: 80,
+            y: canvas.height / 2 - 10,
+            width: 34,
+            height: 24,
+            gravity: 0.5,
+            velocity: 0,
+            jump: -8,
+            rotation: 0,
+            
+            draw: function() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation * Math.PI / 180);
+                
+                // Bird body (gold)
+                ctx.fillStyle = '#D4AF37';
+                ctx.beginPath();
+                ctx.arc(0, 0, 15, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Bird eye
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.arc(5, -5, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Bird beak
+                ctx.fillStyle = 'orange';
+                ctx.beginPath();
+                ctx.moveTo(15, 0);
+                ctx.lineTo(25, -5);
+                ctx.lineTo(25, 5);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Crown on bird's head
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.moveTo(-10, -15);
+                ctx.lineTo(-5, -25);
+                ctx.lineTo(0, -15);
+                ctx.lineTo(5, -25);
+                ctx.lineTo(10, -15);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Jewel in crown
+                ctx.fillStyle = '#C0C0C0';
+                ctx.beginPath();
+                ctx.arc(0, -20, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            },
+            
+            flap: function() {
+                this.velocity = this.jump;
+                this.rotation = -20;
+                
+                // Play flap sound
+                flapSound.currentTime = 0;
+                flapSound.play().catch(e => console.log("Audio play failed:", e));
+                
+                // Add visual feedback
+                document.getElementById('game-canvas').classList.add('flap-animation');
+                setTimeout(() => {
+                    document.getElementById('game-canvas').classList.remove('flap-animation');
+                }, 300);
+            },
+            
+            update: function() {
+                // Apply gravity
+                this.velocity += this.gravity;
+                this.y += this.velocity;
+                
+                // Rotate bird based on velocity
+                if (this.velocity >= 0) {
+                    this.rotation = Math.min(25, this.rotation + 2);
+                }
+                
+                // Floor collision
+                if (this.y + this.height/2 >= canvas.height - 60) {
+                    this.y = canvas.height - 60 - this.height/2;
+                    gameOver();
+                }
+                
+                // Ceiling collision
+                if (this.y - this.height/2 <= 0) {
+                    this.y = this.height/2;
+                    this.velocity = 0;
+                }
+            },
+            
+            reset: function() {
+                this.y = canvas.height / 2 - 10;
+                this.velocity = 0;
+                this.rotation = 0;
+            }
+        };
+        
+        // Pipes (magical gates)
+        const pipes = {
+            position: [],
+            gap: 140, // Gap between top and bottom pipe
+            minYPos: 80, // Minimum Y position for the gap
+            maxYPos: 350, // Maximum Y position for the gap
+            width: 60,
+            
+            draw: function() {
+                for (let i = 0; i < this.position.length; i++) {
+                    let p = this.position[i];
+                    
+                    // Top pipe (silver)
+                    const topGradient = ctx.createLinearGradient(p.x, 0, p.x + this.width, p.topHeight);
+                    topGradient.addColorStop(0, '#C0C0C0');
+                    topGradient.addColorStop(1, '#E8E8E8');
+                    ctx.fillStyle = topGradient;
+                    ctx.fillRect(p.x, 0, this.width, p.topHeight);
+                    
+                    // Top pipe cap (gold)
+                    ctx.fillStyle = '#D4AF37';
+                    ctx.fillRect(p.x - 5, p.topHeight - 15, this.width + 10, 15);
+                    
+                    // Bottom pipe (silver)
+                    const bottomGradient = ctx.createLinearGradient(p.x, p.topHeight + this.gap, p.x + this.width, canvas.height);
+                    bottomGradient.addColorStop(0, '#C0C0C0');
+                    bottomGradient.addColorStop(1, '#E8E8E8');
+                    ctx.fillStyle = bottomGradient;
+                    ctx.fillRect(p.x, p.topHeight + this.gap, this.width, canvas.height - (p.topHeight + this.gap));
+                    
+                    // Bottom pipe cap (gold)
+                    ctx.fillStyle = '#D4AF37';
+                    ctx.fillRect(p.x - 5, p.topHeight + this.gap, this.width + 10, 15);
+                    
+                    // Decorative gems on pipes
+                    ctx.fillStyle = '#FFD700';
+                    ctx.beginPath();
+                    ctx.arc(p.x + this.width/2, p.topHeight - 25, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#C0C0C0';
+                    ctx.beginPath();
+                    ctx.arc(p.x + this.width/2, p.topHeight + this.gap + 25, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            },
+            
+            update: function() {
+                if (frames % 90 === 0) {
+                    this.position.push({
+                        x: canvas.width,
+                        topHeight: Math.floor(Math.random() * (this.maxYPos - this.minYPos)) + this.minYPos,
+                        counted: false
+                    });
+                }
+                
+                for (let i = 0; i < this.position.length; i++) {
+                    let p = this.position[i];
+                    
+                    // Move pipes to the left
+                    p.x -= gameSpeed;
+                    
+                    // Check if bird passed the pipe
+                    if (!p.counted && p.x + this.width < bird.x) {
+                        score++;
+                        scoreDisplay.textContent = `Gaps: ${score}/20`;
+                        progressBar.style.width = `${(score / 20) * 100}%`;
+                        p.counted = true;
+                        
+                        // Play score sound
+                        scoreSound.currentTime = 0;
+                        scoreSound.play().catch(e => console.log("Audio play failed:", e));
+                        
+                        // Create particles
+                        createParticles(p.x + this.width/2, bird.y);
+                        
+                        // Update high score
+                        if (score > highScore) {
+                            highScore = score;
+                            localStorage.setItem('princessFlappyHighScore', highScore);
+                            highScoreDisplay.textContent = `Best: ${highScore}`;
+                        }
+                        
+                        // Increase speed based on difficulty
+                        if (difficulty === 'easy' && score % 7 === 0 && gameSpeed < 3) {
+                            gameSpeed += 0.2;
+                        } else if (difficulty === 'medium' && score % 5 === 0 && gameSpeed < 3.5) {
+                            gameSpeed += 0.3;
+                        } else if (difficulty === 'hard' && score % 3 === 0 && gameSpeed < 4) {
+                            gameSpeed += 0.4;
+                        }
+                        
+                        // Check for victory
+                        if (score >= 20) {
+                            victory();
+                        }
+                    }
+                    
+                    // Collision detection
+                    if (
+                        bird.x + bird.width/2 > p.x && 
+                        bird.x - bird.width/2 < p.x + this.width && 
+                        (bird.y - bird.height/2 < p.topHeight || 
+                         bird.y + bird.height/2 > p.topHeight + this.gap)
+                    ) {
+                        gameOver();
+                    }
+                    
+                    // Remove pipes that are off screen
+                    if (p.x + this.width < 0) {
+                        this.position.shift();
+                    }
+                }
+            },
+            
+            reset: function() {
+                this.position = [];
+            }
+        };
+        
+        // Particle system for visual effects
+        function createParticles(x, y) {
+            for (let i = 0; i < 10; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    size: Math.random() * 5 + 2,
+                    speedX: Math.random() * 6 - 3,
+                    speedY: Math.random() * 6 - 3,
+                    color: i % 2 === 0 ? '#D4AF37' : '#C0C0C0',
+                    life: 30
+                });
+            }
+        }
+        
+        function updateParticles() {
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                p.x += p.speedX;
+                p.y += p.speedY;
+                p.life--;
+                
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+        
+        function drawParticles() {
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / 30;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
+        
+        // Game functions
+        function draw() {
+            background.draw();
+            pipes.draw();
+            bird.draw();
+            drawParticles();
+        }
+        
+        function update() {
+            if (gamePaused) return;
+            
+            bird.update();
+            pipes.update();
+            updateParticles();
+        }
+        
+        function loop() {
+            if (!gameRunning || gamePaused) return;
+            
+            update();
+            draw();
+            frames++;
+            
+            requestAnimationFrame(loop);
+        }
+        
+        function startGame() {
+            gameRunning = true;
+            gamePaused = false;
+            score = 0;
+            frames = 0;
+            
+            // Set initial game speed based on difficulty
+            if (difficulty === 'easy') {
+                gameSpeed = 2;
+            } else if (difficulty === 'medium') {
+                gameSpeed = 2.2;
+            } else {
+                gameSpeed = 2.5;
+            }
+            
+            bird.reset();
+            pipes.reset();
+            particles = [];
+            
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            victoryScreen.style.display = 'none';
+            pauseScreen.style.display = 'none';
+            pauseButton.style.display = 'flex';
+            
+            scoreDisplay.textContent = `Gaps: ${score}/20`;
+            progressBar.style.width = '0%';
+            
+            loop();
+        }
+        
+        function gameOver() {
+            gameRunning = false;
+            
+            // Play collision sound
+            collisionSound.currentTime = 0;
+            collisionSound.play().catch(e => console.log("Audio play failed:", e));
+            
+            gameOverScreen.style.display = 'flex';
+            pauseButton.style.display = 'none';
+        }
+        
+        function victory() {
+            gameRunning = false;
+            
+            // Play victory sound
+            victorySound.currentTime = 0;
+            victorySound.play().catch(e => console.log("Audio play failed:", e));
+            
+            victoryScreen.style.display = 'flex';
+            pauseButton.style.display = 'none';
+            
+            // Save victory in localStorage so princess page knows the game was completed
+            localStorage.setItem('princessGameCompleted', 'true');
+        }
+        
+        function togglePause() {
+            if (!gameRunning) return;
+            
+            gamePaused = !gamePaused;
+            
+            if (gamePaused) {
+                pauseScreen.style.display = 'flex';
+                pauseButton.innerHTML = '<i class="fas fa-play"></i>';
+            } else {
+                pauseScreen.style.display = 'none';
+                pauseButton.innerHTML = '<i class="fas fa-pause"></i>';
+                loop();
+            }
+        }
+        
+        // Event listeners
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+        restartFromPauseButton.addEventListener('click', startGame);
+        
+        continueButton.addEventListener('click', function() {
+            // Redirect to the princess page
+            window.location.href = "princess-page.html";
+        });
+        
+        resumeButton.addEventListener('click', togglePause);
+        pauseButton.addEventListener('click', togglePause);
+        
+        // Difficulty selection
+        difficultyButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                difficultyButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                difficulty = this.getAttribute('data-difficulty');
+            });
+        });
+
+        // Input handling (Spacebar)
+        window.addEventListener('keydown', function(e) {
+            if (e.code === 'Space') {
+                if (!gameRunning && startScreen.style.display !== 'none') {
+                    startGame();
+                } else if (gameRunning && !gamePaused) {
+                    bird.flap();
+                }
+            }
+        });
+
+        // Input handling (Mouse Click)
+        canvas.addEventListener('mousedown', function() {
+            if (gameRunning && !gamePaused) {
+                bird.flap();
+            }
+        });
+
+        // Input handling (Touch for mobile)
+        canvas.addEventListener('touchstart', function(e) {
+            e.preventDefault(); // Prevents scrolling while tapping
+            if (gameRunning && !gamePaused) {
+                bird.flap();
+            }
+        }, {passive: false});
+
+        // Music Player Logic
+        playPauseBtn.addEventListener('click', function() {
+            if (isPlaying) {
+                backgroundMusic.pause();
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            } else {
+                // Browser requires user interaction before playing audio
+                backgroundMusic.play().catch(e => console.log("Audio play failed:", e));
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            }
+            isPlaying = !isPlaying;
+        });
+
+        // Start the background sparkles
+        createSparkles();
+    </script>
+</body>
+</html>
